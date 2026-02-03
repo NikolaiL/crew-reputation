@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewReputation — Openwork Reputation System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <div class="flex justify-center items-center gap-3 mb-4">
+                <span class="text-4xl">🏆</span>
+                <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                    CrewReputation
+                </h1>
+            </div>
+            <p class="text-gray-400 max-w-2xl mx-auto">
+                On-chain reputation system for Openwork's Crew Economy. 
+                Verifiable attestations, skill credentials, and trustless reputation scoring.
+            </p>
+        </header>
+
+        <!-- Connect Wallet -->
+        <div class="text-center mb-8">
+            <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold transition">
+                Connect Wallet
+            </button>
+            <p id="walletAddress" class="mt-2 text-sm text-gray-400"></p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Crew Reputation -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-2">Crew Reputation</h3>
+                <div class="flex items-baseline gap-2">
+                    <span id="crewRep" class="text-4xl font-bold text-blue-400">--</span>
+                    <span class="text-gray-400">/ 100</span>
+                </div>
+                <div class="mt-4">
+                    <span id="crewBadge" class="badge bg-gray-700 text-gray-300">Not Rated</span>
+                </div>
+            </div>
+
+            <!-- Missions Completed -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-2">Missions Completed</h3>
+                <div class="flex items-baseline gap-2">
+                    <span id="missionsCompleted" class="text-4xl font-bold text-green-400">--</span>
+                </div>
+                <p class="text-sm text-gray-400 mt-2">Successful deliveries</p>
+            </div>
+
+            <!-- Average Rating -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-2">Average Rating</h3>
+                <div class="flex items-baseline gap-2">
+                    <span id="avgRating" class="text-4xl font-bold text-yellow-400">--</span>
+                    <span class="text-gray-400">/ 5 ⭐</span>
+                </div>
+                <p class="text-sm text-gray-400 mt-2">From <span id="ratingCount">0</span> ratings</p>
+            </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="glass rounded-xl p-6 mb-8">
+            <h3 class="text-lg font-semibold mb-4">Verified Skills</h3>
+            <div id="skillsList" class="flex flex-wrap gap-2">
+                <span class="text-gray-400">Connect wallet to view skills</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Record Mission -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">📝 Record Mission</h3>
+                <p class="text-sm text-gray-400 mb-4">
+                    Record a completed mission to update reputation.
+                    Requires attestation UID from EAS.
+                </p>
+                <input type="text" id="missionAttestation" placeholder="EAS Attestation UID" 
+                    class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 mb-3 text-sm">
+                <button id="recordMissionBtn" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-semibold transition disabled:opacity-50" disabled>
+                    Record Mission
+                </button>
+            </div>
+
+            <!-- Rate Crew -->
+            <div class="glass rounded-xl p-6">
+                <h3 class="text-lg font-semibold mb-4">⭐ Rate Crew</h3>
+                <p class="text-sm text-gray-400 mb-4">
+                    Rate a crew after mission completion.
+                    Helps build trust in the ecosystem.
+                </p>
+                <input type="text" id="crewToRate" placeholder="Crew Address" 
+                    class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 mb-3 text-sm">
+                <select id="rating" class="w-full bg-gray-800 border border-gray-700 rounded px-4 py-2 mb-3 text-sm">
+                    <option value="500">⭐⭐⭐⭐⭐ (5 stars)</option>
+                    <option value="400">⭐⭐⭐⭐ (4 stars)</option>
+                    <option value="300">⭐⭐⭐ (3 stars)</option>
+                    <option value="200">⭐⭐ (2 stars)</option>
+                    <option value="100">⭐ (1 star)</option>
+                </select>
+                <button id="rateCrewBtn" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded font-semibold transition disabled:opacity-50" disabled>
+                    Submit Rating
+                </button>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="mt-12 text-center text-sm text-gray-500">
+            <p>Built for Openwork Clawathon 🦞 | On-Chain Reputation for the Crew Economy</p>
+            <p class="mt-2">Powered by EAS on Base</p>
+        </div>
+    </div>
+
+    <script>
+        // Contract ABI (simplified)
+        const CONTRACT_ABI = [
+            "function getReputation(address subject) view returns (uint256 crewRep, uint256 pilotRep, uint256 clawRep, uint256 missionsCompleted, uint256 avgRating)",
+            "function hasSkill(address subject, string skill) view returns (bool)",
+            "function recordMissionCompletion(address crew, address pilot, address claw, uint256 missionValue, bytes32 attestationUID)",
+            "function rateCrew(address crew, uint256 rating, bytes32 attestationUID)",
+            "event MissionCompleted(address indexed crew, address indexed pilot, address indexed claw, bytes32 attestationUID, uint256 missionValue)"
+        ];
+
+        const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Update after deployment
+
+        let provider, signer, contract;
+
+        // Connect wallet
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    const address = await signer.getAddress();
+                    
+                    document.getElementById('walletAddress').textContent = address;
+                    document.getElementById('connectBtn').textContent = 'Connected';
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('recordMissionBtn').disabled = false;
+                    document.getElementById('rateCrewBtn').disabled = false;
+                    
+                    // Load reputation data
+                    loadReputation(address);
+                } catch (err) {
+                    console.error('Connection failed:', err);
+                    alert('Failed to connect wallet');
+                }
+            } else {
+                alert('Please install MetaMask');
+            }
+        });
+
+        // Load reputation data
+        async function loadReputation(address) {
+            try {
+                // Mock data for demo (would fetch from contract)
+                const mockData = {
+                    crewRep: 7500,
+                    missionsCompleted: 12,
+                    avgRating: 450,
+                    ratingCount: 8,
+                    skills: ['Solidity', 'React', 'UI/UX', 'Smart Contracts']
+                };
+
+                document.getElementById('crewRep').textContent = (mockData.crewRep / 100).toFixed(0);
+                document.getElementById('missionsCompleted').textContent = mockData.missionsCompleted;
+                document.getElementById('avgRating').textContent = (mockData.avgRating / 100).toFixed(1);
+                document.getElementById('ratingCount').textContent = mockData.ratingCount;
+
+                // Update badge
+                const badge = document.getElementById('crewBadge');
+                if (mockData.crewRep >= 8000) {
+                    badge.textContent = '🏆 Legendary';
+                    badge.className = 'badge bg-purple-600 text-white';
+                } else if (mockData.crewRep >= 6000) {
+                    badge.textContent = '⭐ Veteran';
+                    badge.className = 'badge bg-blue-600 text-white';
+                } else if (mockData.crewRep >= 4000) {
+                    badge.textContent = '🌳 Established';
+                    badge.className = 'badge bg-green-600 text-white';
+                } else if (mockData.crewRep >= 2000) {
+                    badge.textContent = '🌿 Sprout';
+                    badge.className = 'badge bg-yellow-600 text-white';
+                } else {
+                    badge.textContent = '🌱 Seedling';
+                    badge.className = 'badge bg-gray-600 text-white';
+                }
+
+                // Update skills
+                const skillsList = document.getElementById('skillsList');
+                skillsList.innerHTML = mockData.skills.map(skill => 
+                    `<span class="badge bg-blue-900 text-blue-200 border border-blue-700">${skill}</span>`
+                ).join('');
+            } catch (err) {
+                console.error('Failed to load reputation:', err);
+            }
+        }
+
+        // Record mission
+        document.getElementById('recordMissionBtn').addEventListener('click', async () => {
+            const attestationUID = document.getElementById('missionAttestation').value;
+            if (!attestationUID) {
+                alert('Please enter an attestation UID');
+                return;
+            }
+            alert('Mission recorded! (Demo mode)');
+        });
+
+        // Rate crew
+        document.getElementById('rateCrewBtn').addEventListener('click', async () => {
+            const crew = document.getElementById('crewToRate').value;
+            const rating = document.getElementById('rating').value;
+            if (!crew) {
+                alert('Please enter a crew address');
+                return;
+            }
+            alert(`Rated crew ${crew.substring(0, 6)}... with ${rating/100} stars! (Demo mode)`);
+        });
+    </script>
+</body>
+</html>
