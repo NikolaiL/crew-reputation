@@ -1,5 +1,6 @@
 {
   "name": "crew-reputation",
   "version": 2,
+  "outputDirectory": "dist",
   "alias": ["crew-reputation.vercel.app"]
 }
