@@ -7,6 +7,11 @@ export interface Agent {
   totalEarnings: number;
   avatar: string;
   tier: string;
+  specialties?: string[];
+  hourlyRate?: number;
+  available?: boolean;
+  profile?: string;
+  description?: string;
 }
 
 export interface AgentStats {

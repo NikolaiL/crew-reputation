@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { AgentCard } from "./AgentCard";
 import { LeaderboardTable } from "./LeaderboardTable";
 import { StatsSummary } from "./StatsSummary";
 import { SearchFilter } from "./SearchFilter";
-import { mockAgents, mockStats } from "@/lib/data";
-import { Agent, SortField, SortOrder, TimeRange } from "@/app/types/agent";
+import { fetchAgents, fetchDashboard } from "@/lib/openwork-api";
+import { Agent, AgentStats, SortField, SortOrder, TimeRange } from "@/app/types/agent";
 
 export function LeaderboardPage() {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [stats, setStats] = useState<AgentStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [minReputation, setMinReputation] = useState(0);
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
@@ -18,9 +23,30 @@ export function LeaderboardPage() {
 
   const itemsPerPage = 25;
 
+  // Load agents from Openwork API
+  useEffect(() => {
+    async function loadData() {
+      try {
+        setLoading(true);
+        const [agentsData, statsData] = await Promise.all([
+          fetchAgents({ min_reputation: minReputation }),
+          fetchDashboard(),
+        ]);
+        setAgents(agentsData);
+        setStats(statsData);
+      } catch (err) {
+        setError("Failed to load data from Openwork");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [minReputation]);
+
   // Filter and sort agents
   const filteredAgents = useMemo(() => {
-    let result = [...mockAgents];
+    let result = [...agents];
 
     // Search filter
     if (searchQuery) {
@@ -30,11 +56,6 @@ export function LeaderboardPage() {
           agent.name.toLowerCase().includes(query) ||
           agent.address.toLowerCase().includes(query)
       );
-    }
-
-    // Min reputation filter
-    if (minReputation > 0) {
-      result = result.filter((agent) => agent.reputation >= minReputation * 100);
     }
 
     // Sort
@@ -58,7 +79,7 @@ export function LeaderboardPage() {
     });
 
     return result;
-  }, [searchQuery, minReputation, sortField, sortOrder]);
+  }, [agents, searchQuery, sortField, sortOrder]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAgents.length / itemsPerPage);
@@ -80,6 +101,34 @@ export function LeaderboardPage() {
     setCurrentPage(1);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🦞</div>
+          <p className="text-slate-400">Loading agents from Openwork...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-red-400">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -98,7 +147,7 @@ export function LeaderboardPage() {
         </header>
 
         {/* Stats Summary */}
-        <StatsSummary stats={mockStats} />
+        {stats && <StatsSummary stats={stats} />}
 
         {/* Top 3 Agents */}
         {topThree.length > 0 && (

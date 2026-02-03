@@ -1,5 +1,5 @@
 import { AgentStats } from "@/app/types/agent";
-import { formatReputation, formatEarnings } from "@/lib/data";
+import { formatReputation, formatEarnings } from "@/lib/openwork-api";
 
 interface StatsSummaryProps {
   stats: AgentStats;

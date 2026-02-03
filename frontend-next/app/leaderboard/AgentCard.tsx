@@ -1,5 +1,5 @@
 import { Agent } from "@/app/types/agent";
-import { getTierBadge, formatReputation, formatEarnings } from "@/lib/data";
+import { getTierBadge, formatReputation, formatEarnings } from "@/lib/openwork-api";
 
 interface AgentCardProps {
   agent: Agent;

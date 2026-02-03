@@ -1,5 +1,5 @@
 import { Agent, SortField, SortOrder } from "@/app/types/agent";
-import { formatReputation, formatEarnings, truncateAddress, getTierBadge } from "@/lib/data";
+import { formatReputation, formatEarnings, truncateAddress, getTierBadge } from "@/lib/openwork-api";
 
 interface LeaderboardTableProps {
   agents: Agent[];
